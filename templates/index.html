@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>API de Tarefas — Flávio Paixão</title>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;800&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --bg: #0a0e17;
+      --surface: #111827;
+      --border: #1e2d45;
+      --accent: #f97316;
+      --accent2: #38bdf8;
+      --green: #22c55e;
+      --red: #ef4444;
+      --text: #e2e8f0;
+      --muted: #64748b;
+      --mono: 'Space Mono', monospace;
+      --sans: 'Syne', sans-serif;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--sans);
+      min-height: 100vh;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(56,189,248,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(56,189,248,0.03) 1px, transparent 1px);
+      background-size: 40px 40px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .container {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 0 24px;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* NAV */
+    nav {
+      padding: 24px 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .nav-logo {
+      font-family: var(--mono);
+      font-size: 13px;
+      color: var(--accent);
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 16px;
+    }
+
+    .nav-links a {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--muted);
+      text-decoration: none;
+      border: 1px solid var(--border);
+      padding: 6px 12px;
+      border-radius: 2px;
+      transition: all 0.2s;
+    }
+
+    .nav-links a:hover {
+      color: var(--accent2);
+      border-color: var(--accent2);
+    }
+
+    /* HERO */
+    .hero {
+      padding: 60px 0 40px;
+    }
+
+    .hero-label {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--accent);
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .hero-label::before {
+      content: '';
+      display: block;
+      width: 24px;
+      height: 1px;
+      background: var(--accent);
+    }
+
+    h1 {
+      font-size: clamp(28px, 5vw, 48px);
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      margin-bottom: 12px;
+    }
+
+    h1 span { color: var(--accent); }
+
+    .hero-sub {
+      font-size: 15px;
+      color: var(--muted);
+      margin-bottom: 32px;
+    }
+
+    /* STATUS BAR */
+    .status-bar {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 12px 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 32px;
+      font-family: var(--mono);
+      font-size: 12px;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--green);
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+
+    .status-text { color: var(--green); }
+    .status-url { color: var(--muted); margin-left: auto; }
+
+    /* FORM */
+    .form-section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 28px;
+      margin-bottom: 24px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .form-section::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0;
+      width: 3px;
+      height: 100%;
+      background: var(--accent);
+    }
+
+    .form-title {
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--accent);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      margin-bottom: 20px;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .form-group.full { grid-column: 1 / -1; }
+
+    label {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--muted);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    input[type="text"], textarea {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 2px;
+      padding: 10px 14px;
+      color: var(--text);
+      font-family: var(--sans);
+      font-size: 14px;
+      outline: none;
+      transition: border-color 0.2s;
+      width: 100%;
+    }
+
+    input[type="text"]:focus, textarea:focus {
+      border-color: var(--accent);
+    }
+
+    textarea { resize: vertical; min-height: 80px; }
+
+    .checkbox-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    input[type="checkbox"] {
+      width: 16px;
+      height: 16px;
+      accent-color: var(--accent);
+    }
+
+    .checkbox-group label {
+      text-transform: none;
+      font-size: 13px;
+      letter-spacing: 0;
+      color: var(--text);
+    }
+
+    .btn {
+      font-family: var(--mono);
+      font-size: 12px;
+      padding: 12px 24px;
+      border-radius: 2px;
+      border: none;
+      cursor: pointer;
+      letter-spacing: 0.05em;
+      transition: all 0.2s;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: #fff;
+    }
+
+    .btn-primary:hover { opacity: 0.85; }
+
+    .btn-danger {
+      background: transparent;
+      color: var(--red);
+      border: 1px solid var(--red);
+      padding: 6px 12px;
+      font-size: 11px;
+    }
+
+    .btn-danger:hover { background: rgba(239,68,68,0.1); }
+
+    .btn-success {
+      background: transparent;
+      color: var(--green);
+      border: 1px solid var(--green);
+      padding: 6px 12px;
+      font-size: 11px;
+    }
+
+    .btn-success:hover { background: rgba(34,197,94,0.1); }
+
+    /* TASKS */
+    .tasks-section { margin-bottom: 60px; }
+
+    .tasks-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+
+    .tasks-title {
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--muted);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    .tasks-count {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--accent2);
+      border: 1px solid rgba(56,189,248,0.3);
+      padding: 3px 10px;
+      border-radius: 2px;
+    }
+
+    .task-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 20px 24px;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: flex-start;
+      gap: 16px;
+      transition: border-color 0.2s;
+      animation: fadeIn 0.3s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .task-card:hover { border-color: rgba(249,115,22,0.3); }
+    .task-card.concluida { opacity: 0.6; }
+    .task-card.concluida .task-titulo { text-decoration: line-through; color: var(--muted); }
+
+    .task-id {
+      font-family: var(--mono);
+      font-size: 10px;
+      color: var(--muted);
+      background: var(--bg);
+      border: 1px solid var(--border);
+      padding: 4px 8px;
+      border-radius: 2px;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    .task-content { flex: 1; }
+
+    .task-titulo {
+      font-size: 15px;
+      font-weight: 700;
+      margin-bottom: 4px;
+      letter-spacing: -0.01em;
+    }
+
+    .task-descricao {
+      font-size: 13px;
+      color: var(--muted);
+      margin-bottom: 8px;
+      line-height: 1.5;
+    }
+
+    .task-meta {
+      font-family: var(--mono);
+      font-size: 10px;
+      color: var(--muted);
+    }
+
+    .task-status {
+      font-family: var(--mono);
+      font-size: 10px;
+      padding: 3px 8px;
+      border-radius: 2px;
+    }
+
+    .status-pendente {
+      background: rgba(249,115,22,0.1);
+      color: var(--accent);
+      border: 1px solid rgba(249,115,22,0.3);
+    }
+
+    .status-concluida {
+      background: rgba(34,197,94,0.1);
+      color: var(--green);
+      border: 1px solid rgba(34,197,94,0.3);
+    }
+
+    .task-actions {
+      display: flex;
+      gap: 8px;
+      flex-shrink: 0;
+      align-items: center;
+    }
+
+    /* EMPTY STATE */
+    .empty-state {
+      text-align: center;
+      padding: 60px 0;
+      color: var(--muted);
+      font-family: var(--mono);
+      font-size: 13px;
+    }
+
+    .empty-state span {
+      display: block;
+      font-size: 32px;
+      margin-bottom: 12px;
+    }
+
+    /* TOAST */
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 14px 20px;
+      font-family: var(--mono);
+      font-size: 12px;
+      z-index: 100;
+      transform: translateY(100px);
+      opacity: 0;
+      transition: all 0.3s;
+    }
+
+    .toast.show {
+      transform: translateY(0);
+      opacity: 1;
+    }
+
+    .toast.success { border-color: var(--green); color: var(--green); }
+    .toast.error { border-color: var(--red); color: var(--red); }
+
+    @media (max-width: 600px) {
+      .form-grid { grid-template-columns: 1fr; }
+      .task-card { flex-direction: column; }
+      .task-actions { flex-direction: row; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <nav>
+    <span class="nav-logo">fp.tasks</span>
+    <div class="nav-links">
+      <a href="/api/docs/" target="_blank">📄 Swagger</a>
+      <a href="https://github.com/Flavio-Paixao/api-aws" target="_blank">⌥ GitHub</a>
+    </div>
+  </nav>
+
+  <section class="hero">
+    <div class="hero-label">Django REST Framework · AWS EC2</div>
+    <h1>API de <span>Tarefas</span></h1>
+    <p class="hero-sub">Gerenciador de tarefas com API REST — desenvolvido com Python, Django e hospedado na AWS.</p>
+
+    <div class="status-bar">
+      <div class="status-dot"></div>
+      <span class="status-text">API Online</span>
+      <span class="status-url" id="api-url">/api/tarefas/</span>
+    </div>
+  </section>
+
+  <!-- FORM -->
+  <div class="form-section">
+    <div class="form-title">// nova tarefa</div>
+    <div class="form-grid">
+      <div class="form-group full">
+        <label>Título *</label>
+        <input type="text" id="titulo" placeholder="Ex: Estudar para AWS Cloud Practitioner"/>
+      </div>
+      <div class="form-group full">
+        <label>Descrição</label>
+        <textarea id="descricao" placeholder="Detalhes da tarefa..."></textarea>
+      </div>
+    </div>
+    <div class="checkbox-group">
+      <input type="checkbox" id="concluida"/>
+      <label for="concluida">Marcar como concluída</label>
+    </div>
+    <button class="btn btn-primary" onclick="criarTarefa()">+ Criar Tarefa</button>
+  </div>
+
+  <!-- TASKS -->
+  <section class="tasks-section">
+    <div class="tasks-header">
+      <span class="tasks-title">// tarefas</span>
+      <span class="tasks-count" id="tasks-count">0 tarefas</span>
+    </div>
+    <div id="tasks-list"></div>
+  </section>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  const API = '/api/tarefas/';
+
+  function showToast(msg, type = 'success') {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = `toast ${type} show`;
+    setTimeout(() => t.className = 'toast', 3000);
+  }
+
+  async function carregarTarefas() {
+    try {
+      const res = await fetch(API);
+      const tarefas = await res.json();
+      renderTarefas(tarefas);
+    } catch (e) {
+      showToast('Erro ao carregar tarefas', 'error');
+    }
+  }
+
+  function renderTarefas(tarefas) {
+    const list = document.getElementById('tasks-list');
+    const count = document.getElementById('tasks-count');
+    count.textContent = `${tarefas.length} tarefa${tarefas.length !== 1 ? 's' : ''}`;
+
+    if (tarefas.length === 0) {
+      list.innerHTML = `<div class="empty-state"><span>📋</span>Nenhuma tarefa ainda. Crie a primeira!</div>`;
+      return;
+    }
+
+    list.innerHTML = tarefas.map(t => `
+      <div class="task-card ${t.concluida ? 'concluida' : ''}" id="task-${t.id}">
+        <span class="task-id">#${t.id}</span>
+        <div class="task-content">
+          <div class="task-titulo">${t.titulo}</div>
+          ${t.descricao ? `<div class="task-descricao">${t.descricao}</div>` : ''}
+          <div class="task-meta">${new Date(t.criada_em).toLocaleString('pt-BR')}</div>
+        </div>
+        <div class="task-actions">
+          <span class="task-status ${t.concluida ? 'status-concluida' : 'status-pendente'}">
+            ${t.concluida ? 'concluída' : 'pendente'}
+          </span>
+          <button class="btn btn-success" onclick="toggleTarefa(${t.id}, ${t.concluida})">
+            ${t.concluida ? '↩' : '✓'}
+          </button>
+          <button class="btn btn-danger" onclick="deletarTarefa(${t.id})">✕</button>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  async function criarTarefa() {
+    const titulo = document.getElementById('titulo').value.trim();
+    const descricao = document.getElementById('descricao').value.trim();
+    const concluida = document.getElementById('concluida').checked;
+
+    if (!titulo) { showToast('Título é obrigatório!', 'error'); return; }
+
+    try {
+      const res = await fetch(API, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ titulo, descricao, concluida })
+      });
+
+      if (res.ok) {
+        document.getElementById('titulo').value = '';
+        document.getElementById('descricao').value = '';
+        document.getElementById('concluida').checked = false;
+        showToast('✓ Tarefa criada com sucesso!');
+        carregarTarefas();
+      }
+    } catch (e) {
+      showToast('Erro ao criar tarefa', 'error');
+    }
+  }
+
+  async function toggleTarefa(id, concluida) {
+    try {
+      await fetch(`${API}${id}/`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ concluida: !concluida })
+      });
+      showToast(concluida ? '↩ Tarefa reaberta' : '✓ Tarefa concluída!');
+      carregarTarefas();
+    } catch (e) {
+      showToast('Erro ao atualizar tarefa', 'error');
+    }
+  }
+
+  async function deletarTarefa(id) {
+    try {
+      await fetch(`${API}${id}/`, { method: 'DELETE' });
+      showToast('✕ Tarefa removida');
+      carregarTarefas();
+    } catch (e) {
+      showToast('Erro ao deletar tarefa', 'error');
+    }
+  }
+
+  carregarTarefas();
+</script>
+</body>
+</html>
